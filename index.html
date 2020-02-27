@@ -14,231 +14,231 @@
     
     <script type="text/processing">
     
-      ArrayList bullets = new ArrayList();
-      Bullet[] bulletArray;
-      Ball[] ballArray;
-      Player player1;
-      int redValue;                               //redValue of background
-      int redValueChange;
-      Boolean keyLeft = false, keyRight = false;
-      public void setup(){
-        player1 = new Player();
-        bullets = new ArrayList<Bullet>();
-        bulletArray=new Bullet[1];
-        for(int i=0;i<bulletArray.length; i++){
-          bulletArray[i]=new Bullet(width/2,height-20, -8);
-        }
-        size(1200,800);                         //size of the window
-        background(100,100,100);                //creates a gray background
-        ballArray = new Ball[50];
-        for(int i=0; i<ballArray.length; i++){
-          ballArray[i] = new Ball();             //creates a new ball object
-        }
-        redValueChange=1;
+    ArrayList bullets = new ArrayList();
+    Bullet[] bulletArray;
+    Ball[] ballArray;
+    Player player1;
+    int redValue;                               //redValue of background
+    int redValueChange;
+    Boolean keyLeft = false, keyRight = false;
+    public void setup(){
+      player1 = new Player();
+      bullets = new ArrayList<Bullet>();
+      bulletArray=new Bullet[1];
+      for(int i=0;i<bulletArray.length; i++){
+        bulletArray[i]=new Bullet(width/2,height-20, -8);
+      }
+      size(1200,800);                         //size of the window
+      background(100,100,100);                //creates a gray background
+      ballArray = new Ball[50];
+      for(int i=0; i<ballArray.length; i++){
+        ballArray[i] = new Ball();             //creates a new ball object
+      }
+      redValueChange=1;
+    }
+
+    void movePlayer(){
+      if (keyLeft){
+        player1.x-=10;
+      }
+      if (keyRight){
+        player1.x+=10;
+      }
+    }
+
+    void keyPressed(){
+      if (keyCode == LEFT){
+        keyLeft = true;
+      }
+      else if (keyCode == RIGHT){
+          keyRight = true;
+      }
+      else if (key == 's'){
+        player1.shoot();
+      }
+    }
+
+
+    void keyReleased() {
+      if (keyCode == LEFT) {
+        keyLeft = false;
+      }
+      else if (keyCode == RIGHT){
+          keyRight = false;
+      }
+    }
+
+    void handleBullets(){
+      for (Bullet b:bulletArray){
+        b.move();
+        b.display();
+        b.check();
+      }
+    }
+
+
+
+    void draw(){
+      if(redValue>255 || redValue<0){          //at the top and bottom of red spectrum, reverse color change direction
+        redValueChange*=-1;
+      }
+      redValue+=redValueChange;
+      textSize(30);
+      text("Score",10,40);
+      background(redValue,0,0);     //set the background color
+      movePlayer();
+      player1.show();
+      handleBullets();
+      for(int i=0; i<ballArray.length; i++){              //iterate through each ball in the array
+        ballArray[i].update();                           //move the ball for each ball in the array
+        ballArray[i].bounceAtEdge();                    //check the edge for each ball in the array
+        ballArray[i].show();
+        //show each ball in the array
+      }
+      player1.show();
+    }
+
+    public class Ball{
+
+      //instance variables
+      float x;
+      float y;
+      float size;
+      float xVel;
+      float yVel;
+      float r,g,b,o;                                   //red,green,blue,opacity
+
+
+      //constructor, runs each time a ball is constructed
+      public Ball(){
+
+        x = random(0,width);                          //random x-coordinate on screen for each ball
+        y = random(0,200);                         //random y-coordinate
+
+        size=random(15,40);                                         //size of ball
+
+        yVel=random(0.1,0.3);                            //speed in vertical direction
+        xVel=random(-1,1);                            //speed in vertical direction
+
+        r=random(0,255);                            //set the color and opacity randomly for each ball when it is constructed
+        g=random(0,255);
+        b=random(0,255);
+        o=random(100,255);
       }
 
-      void movePlayer(){
-        if (keyLeft){
-          player1.x-=10;
-        }
-        if (keyRight){
-          player1.x+=10;
-        }
-      }
 
-      void keyPressed(){
-        if (keyCode == LEFT){
-          keyLeft = true;
-        }
-        else if (keyCode == RIGHT){
-            keyRight = true;
-        }
-        else if (key == 's'){
-          player1.shoot();
-        }
+      public void show(){
+        ellipse(x,y,size,size);                           //draws an ellipse at x,y location, size is the width and height therefore a circle is drawn
+        fill(r,g,b,o);                              //fills each ball with its own specific color and opacity
       }
 
 
-      void keyReleased() {
-        if (keyCode == LEFT) {
-          keyLeft = false;
+      public void update(){
+        x+=xVel;                                    //updates the ball to a new x and y position
+        y+=yVel;
+      }
+
+      public void bounceAtEdge(){                   //if ball hits edge of screen, change its appropriate direction and update the position
+        if( x>width || x<0 ){
+          xVel*=-1;
+          update();
         }
-        else if (keyCode == RIGHT){
-            keyRight = false;
+        if( y>height || y<0){
+          yVel*=-1;
+          update();
+        }
+
+      }
+
+
+    }
+    class Bullet{
+      float xb,y;
+      float velocity;
+
+
+      Bullet(float x,float y,float velocity){
+        this.xb=x;
+        this.y=y;
+        this.velocity = velocity;
+      }
+      void display(){
+        fill(80);
+        elipse(this.xb,this.y,10,10);
+      }
+
+      void move(){
+        this.y+=this.velocity;
+        if(this.y>height ||this.y<0){
+          bullets.remove(this);
         }
       }
 
-      void handleBullets(){
-        for (Bullet b:bulletArray){
-          b.move();
-          b.display();
-          b.check();
-        }
-      }
-
-
-
-      void draw(){
-        if(redValue>255 || redValue<0){          //at the top and bottom of red spectrum, reverse color change direction
-          redValueChange*=-1;
-        }
-        redValue+=redValueChange;
-        textSize(30);
-        text("Score",10,40);
-        background(redValue,0,0);     //set the background color
-        movePlayer();
-        player1.show();
-        handleBullets();
-        for(int i=0; i<ballArray.length; i++){              //iterate through each ball in the array
-          ballArray[i].update();                           //move the ball for each ball in the array
-          ballArray[i].bounceAtEdge();                    //check the edge for each ball in the array
-          ballArray[i].show();
-          //show each ball in the array
-        }
-        player1.show();
-      }
-
-      public class Ball{
-
-        //instance variables
-        float x;
-        float y;
-        float size;
-        float xVel;
-        float yVel;
-        float r,g,b,o;                                   //red,green,blue,opacity
-
-
-        //constructor, runs each time a ball is constructed
-        public Ball(){
-
-          x = random(0,width);                          //random x-coordinate on screen for each ball
-          y = random(0,200);                         //random y-coordinate
-
-          size=random(15,40);                                         //size of ball
-
-          yVel=random(0.1,0.3);                            //speed in vertical direction
-          xVel=random(-1,1);                            //speed in vertical direction
-
-          r=random(0,255);                            //set the color and opacity randomly for each ball when it is constructed
-          g=random(0,255);
-          b=random(0,255);
-          o=random(100,255);
-        }
-
-
-        public void show(){
-          ellipse(x,y,size,size);                           //draws an ellipse at x,y location, size is the width and height therefore a circle is drawn
-          fill(r,g,b,o);                              //fills each ball with its own specific color and opacity
-        }
-
-
-        public void update(){
-          x+=xVel;                                    //updates the ball to a new x and y position
-          y+=yVel;
-        }
-
-        public void bounceAtEdge(){                   //if ball hits edge of screen, change its appropriate direction and update the position
-          if( x>width || x<0 ){
-            xVel*=-1;
-            update();
-          }
-          if( y>height || y<0){
-            yVel*=-1;
-            update();
-          }
-
-        }
-
+      float getx(){
+       return this.xb;
 
       }
-      class Bullet{
-        float xb,y;
-        float velocity;
-
-
-        Bullet(float x,float y,float velocity){
-          this.xb=x;
-          this.y=y;
-          this.velocity = velocity;
-        }
-        void display(){
-          fill(80);
-          elipse(this.xb,this.y,10,10);
-        }
-
-        void move(){
-          this.y+=this.velocity;
-          if(this.y>height ||this.y<0){
-            bullets.remove(this);
-          }
-        }
-
-        float getx(){
-         return this.xb;
-
-        }
-        public void check(){
-          for (int i = 0;i<ballArray.length;i++){
-            if (sqrt(pow(this.xb-ballArray[i].x,2)+ pow(this.y-ballArray[i].y,2))<(ballArray[i].size/2+5))    {
-              ballArray[i].size = 0.0001;
-            }
-
+      public void check(){
+        for (int i = 0;i<ballArray.length;i++){
+          if (sqrt(pow(this.xb-ballArray[i].x,2)+ pow(this.y-ballArray[i].y,2))<(ballArray[i].size/2+5))    {
+            ballArray[i].size = 0.0001;
           }
 
-
         }
+
+
       }
-      public class Player{
+    }
+    public class Player{
 
-        float playersize;                                //red,green,blue,opacity
-        boolean canShoot;
-        int timeLastShot;
-        int coolDown;
-        float x,y;
-        PImage img;
+      float playersize;                                //red,green,blue,opacity
+      boolean canShoot;
+      int timeLastShot;
+      int coolDown;
+      float x,y;
+      PImage img;
 
 
-        //constructor, runs each time a ball is constructed
-        public Player(){
+      //constructor, runs each time a ball is constructed
+      public Player(){
 
-          this.x = width/2;                          //random x-coordinate on screen for each ball
-          this.y = height-100;                         //random y-coordinate
-          this.timeLastShot = 0;
-          this.coolDown = 2;
+        this.x = width/2;                          //random x-coordinate on screen for each ball
+        this.y = height-100;                         //random y-coordinate
+        this.timeLastShot = 0;
+        this.coolDown = 2;
 
-          playersize=40;                                         //size of ball
-        }
-        void shoot() {
-          if (millis() - timeLastShot > coolDown) {
-            print("pew");
-            bulletArray=new Bullet[1];
-            for(int i=0;i<bulletArray.length; i++){
-              bulletArray[i]=new Bullet(x,y, -8);
-              timeLastShot = millis();
-            }
+        playersize=40;                                         //size of ball
+      }
+      void shoot() {
+        if (millis() - timeLastShot > coolDown) {
+          print("pew");
+          bulletArray=new Bullet[1];
+          for(int i=0;i<bulletArray.length; i++){
+            bulletArray[i]=new Bullet(x,y, -8);
+            timeLastShot = millis();
           }
         }
-
-
-        public void show(){
-          fill(255,0,0);  
-          img = loadImage("miamor.jpg");
-          image(img, this.x, this.y);                           //draws an ellipse at x,y location, size is the width and height therefore a circle is drawn
-                                      //fills each ball with its own specific color and opacity
-        }
-        //void changePlayerX(){
-          //if(keyPressed){
-
-           // if(keyCode==LEFT){
-           //   player1.playerx-=5;
-          //  }
-          //  else if(keyCode==RIGHT){
-           //   player1.playerx+=5;
-         //   }
-        // }
-      //}
       }
+
+
+      public void show(){
+        fill(255,0,0);  
+        img = loadImage("miamor.jpg");
+        image(img, this.x, this.y);                           //draws an ellipse at x,y location, size is the width and height therefore a circle is drawn
+                                    //fills each ball with its own specific color and opacity
+      }
+      //void changePlayerX(){
+        //if(keyPressed){
+
+         // if(keyCode==LEFT){
+         //   player1.playerx-=5;
+        //  }
+        //  else if(keyCode==RIGHT){
+         //   player1.playerx+=5;
+       //   }
+      // }
+    //}
+    }
 
 
 
