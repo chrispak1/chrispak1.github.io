@@ -20998,3 +20998,648 @@ module.exports = function setupParser(Processing, options) {
               horiz_adv_x: horiz_adv_x,
               draw: path.draw
             };
+          }
+        } // finished adding glyphs to table
+      };
+
+      // Load and parse Batik SVG font as XML into a Processing Glyph object
+      var loadXML = function() {
+        var xmlDoc;
+
+        try {
+          xmlDoc = document.implementation.createDocument("", "", null);
+        }
+        catch(e_fx_op) {
+          Processing.debug(e_fx_op.message);
+          return;
+        }
+
+        try {
+          xmlDoc.async = false;
+          xmlDoc.load(url);
+          parseSVGFont(xmlDoc.getElementsByTagName("svg")[0]);
+        }
+        catch(e_sf_ch) {
+          // Google Chrome, Safari etc.
+          Processing.debug(e_sf_ch);
+          try {
+            var xmlhttp = new window.XMLHttpRequest();
+            xmlhttp.open("GET", url, false);
+            xmlhttp.send(null);
+            parseSVGFont(xmlhttp.responseXML.documentElement);
+          }
+          catch(e) {
+            Processing.debug(e_sf_ch);
+          }
+        }
+      };
+
+      // Create a new object in glyphTable to store this font
+      p.glyphTable[url] = {};
+
+      // Begin loading the Batik SVG font...
+      loadXML(url);
+
+      // Return the loaded font for attribute grabbing
+      return p.glyphTable[url];
+    };
+
+    /**
+     * Gets the sketch parameter value. The parameter can be defined as the canvas attribute with
+     * the "data-processing-" prefix or provided in the pjs directive (e.g. param-test="52").
+     * The function tries the canvas attributes, then the pjs directive content.
+     *
+     * @param   {String}    name          The name of the param to read.
+     *
+     * @returns {String}    The parameter value, or null if parameter is not defined.
+     */
+    p.param = function(name) {
+      // trying attribute that was specified in CANVAS
+      var attributeName = "data-processing-" + name;
+      if (curElement.hasAttribute(attributeName)) {
+        return curElement.getAttribute(attributeName);
+      }
+      // trying child PARAM elements of the CANVAS
+      for (var i = 0, len = curElement.childNodes.length; i < len; ++i) {
+        var item = curElement.childNodes.item(i);
+        if (item.nodeType !== 1 || item.tagName.toLowerCase() !== "param") {
+          continue;
+        }
+        if (item.getAttribute("name") === name) {
+          return item.getAttribute("value");
+        }
+      }
+      // fallback to default params
+      if (curSketch.params.hasOwnProperty(name)) {
+        return curSketch.params[name];
+      }
+      return null;
+    };
+
+    ////////////////////////////////////////////////////////////////////////////
+    // 2D/3D methods wiring utils
+    ////////////////////////////////////////////////////////////////////////////
+    function wireDimensionalFunctions(mode) {
+      // Drawing2D/Drawing3D
+      if (mode === '3D') {
+        drawing = new Drawing3D();
+      } else if (mode === '2D') {
+        drawing = new Drawing2D();
+      } else {
+        drawing = new DrawingPre();
+      }
+
+      // Wire up functions (Use DrawingPre properties names)
+      for (var i in DrawingPre.prototype) {
+        if (DrawingPre.prototype.hasOwnProperty(i) && i.indexOf("$") < 0) {
+          p[i] = drawing[i];
+        }
+      }
+
+      // Run initialization
+      drawing.$init();
+    }
+
+    function createDrawingPreFunction(name) {
+      return function() {
+        wireDimensionalFunctions("2D");
+        return drawing[name].apply(this, arguments);
+      };
+    }
+    DrawingPre.prototype.translate = createDrawingPreFunction("translate");
+    DrawingPre.prototype.transform = createDrawingPreFunction("transform");
+    DrawingPre.prototype.scale = createDrawingPreFunction("scale");
+    DrawingPre.prototype.pushMatrix = createDrawingPreFunction("pushMatrix");
+    DrawingPre.prototype.popMatrix = createDrawingPreFunction("popMatrix");
+    DrawingPre.prototype.resetMatrix = createDrawingPreFunction("resetMatrix");
+    DrawingPre.prototype.applyMatrix = createDrawingPreFunction("applyMatrix");
+    DrawingPre.prototype.rotate = createDrawingPreFunction("rotate");
+    DrawingPre.prototype.rotateZ = createDrawingPreFunction("rotateZ");
+    DrawingPre.prototype.shearX = createDrawingPreFunction("shearX");
+    DrawingPre.prototype.shearY = createDrawingPreFunction("shearY");
+    DrawingPre.prototype.redraw = createDrawingPreFunction("redraw");
+    DrawingPre.prototype.toImageData = createDrawingPreFunction("toImageData");
+    DrawingPre.prototype.ambientLight = createDrawingPreFunction("ambientLight");
+    DrawingPre.prototype.directionalLight = createDrawingPreFunction("directionalLight");
+    DrawingPre.prototype.lightFalloff = createDrawingPreFunction("lightFalloff");
+    DrawingPre.prototype.lightSpecular = createDrawingPreFunction("lightSpecular");
+    DrawingPre.prototype.pointLight = createDrawingPreFunction("pointLight");
+    DrawingPre.prototype.noLights = createDrawingPreFunction("noLights");
+    DrawingPre.prototype.spotLight = createDrawingPreFunction("spotLight");
+    DrawingPre.prototype.beginCamera = createDrawingPreFunction("beginCamera");
+    DrawingPre.prototype.endCamera = createDrawingPreFunction("endCamera");
+    DrawingPre.prototype.frustum = createDrawingPreFunction("frustum");
+    DrawingPre.prototype.box = createDrawingPreFunction("box");
+    DrawingPre.prototype.sphere = createDrawingPreFunction("sphere");
+    DrawingPre.prototype.ambient = createDrawingPreFunction("ambient");
+    DrawingPre.prototype.emissive = createDrawingPreFunction("emissive");
+    DrawingPre.prototype.shininess = createDrawingPreFunction("shininess");
+    DrawingPre.prototype.specular = createDrawingPreFunction("specular");
+    DrawingPre.prototype.fill = createDrawingPreFunction("fill");
+    DrawingPre.prototype.stroke = createDrawingPreFunction("stroke");
+    DrawingPre.prototype.strokeWeight = createDrawingPreFunction("strokeWeight");
+    DrawingPre.prototype.smooth = createDrawingPreFunction("smooth");
+    DrawingPre.prototype.noSmooth = createDrawingPreFunction("noSmooth");
+    DrawingPre.prototype.point = createDrawingPreFunction("point");
+    DrawingPre.prototype.vertex = createDrawingPreFunction("vertex");
+    DrawingPre.prototype.endShape = createDrawingPreFunction("endShape");
+    DrawingPre.prototype.bezierVertex = createDrawingPreFunction("bezierVertex");
+    DrawingPre.prototype.curveVertex = createDrawingPreFunction("curveVertex");
+    DrawingPre.prototype.curve = createDrawingPreFunction("curve");
+    DrawingPre.prototype.line = createDrawingPreFunction("line");
+    DrawingPre.prototype.bezier = createDrawingPreFunction("bezier");
+    DrawingPre.prototype.rect = createDrawingPreFunction("rect");
+    DrawingPre.prototype.ellipse = createDrawingPreFunction("ellipse");
+    DrawingPre.prototype.background = createDrawingPreFunction("background");
+    DrawingPre.prototype.image = createDrawingPreFunction("image");
+    DrawingPre.prototype.textWidth = createDrawingPreFunction("textWidth");
+    DrawingPre.prototype.text$line = createDrawingPreFunction("text$line");
+    DrawingPre.prototype.$ensureContext = createDrawingPreFunction("$ensureContext");
+    DrawingPre.prototype.$newPMatrix = createDrawingPreFunction("$newPMatrix");
+
+    DrawingPre.prototype.size = function(aWidth, aHeight, aMode) {
+      wireDimensionalFunctions(aMode === PConstants.WEBGL ? "3D" : "2D");
+      p.size(aWidth, aHeight, aMode);
+    };
+
+    DrawingPre.prototype.$init = noop;
+
+    Drawing2D.prototype.$init = function() {
+      // Setup default 2d canvas context.
+      // Moving this here removes the number of times we need to check the 3D variable
+      p.size(p.width, p.height);
+
+      curContext.lineCap = 'round';
+
+      // Set default stroke and fill color
+      p.noSmooth();
+      p.disableContextMenu();
+    };
+    Drawing3D.prototype.$init = function() {
+      // For ref/perf test compatibility until those are fixed
+      p.use3DContext = true;
+      p.disableContextMenu();
+    };
+
+    DrawingShared.prototype.$ensureContext = function() {
+      return curContext;
+    };
+
+    //////////////////////////////////////////////////////////////////////////
+    // Keyboard Events
+    //////////////////////////////////////////////////////////////////////////
+
+    // In order to catch key events in a canvas, it needs to be "specially focusable",
+    // by assigning it a tabindex. If no tabindex is specified on-page, set this to 0.
+    if (!curElement.getAttribute("tabindex")) {
+      curElement.setAttribute("tabindex", 0);
+    }
+
+    function getKeyCode(e) {
+      var code = e.which || e.keyCode;
+      switch (code) {
+        case 13: // ENTER
+          return 10;
+        case 91: // META L (Saf/Mac)
+        case 93: // META R (Saf/Mac)
+        case 224: // META (FF/Mac)
+          return 157;
+        case 57392: // CONTROL (Op/Mac)
+          return 17;
+        case 46: // DELETE
+          return 127;
+        case 45: // INSERT
+          return 155;
+      }
+      return code;
+    }
+
+    function getKeyChar(e) {
+      var c = e.which || e.keyCode;
+      var anyShiftPressed = e.shiftKey || e.ctrlKey || e.altKey || e.metaKey;
+      switch (c) {
+        case 13:
+          c = anyShiftPressed ? 13 : 10; // RETURN vs ENTER (Mac)
+          break;
+        case 8:
+          c = anyShiftPressed ? 127 : 8; // DELETE vs BACKSPACE (Mac)
+          break;
+      }
+      return new Char(c);
+    }
+
+    function suppressKeyEvent(e) {
+      if (typeof e.preventDefault === "function") {
+        e.preventDefault();
+      } else if (typeof e.stopPropagation === "function") {
+        e.stopPropagation();
+      }
+      return false;
+    }
+
+    function updateKeyPressed() {
+      var ch;
+      for (ch in pressedKeysMap) {
+        if (pressedKeysMap.hasOwnProperty(ch)) {
+          p.__keyPressed = true;
+          return;
+        }
+      }
+      p.__keyPressed = false;
+    }
+
+    function resetKeyPressed() {
+      p.__keyPressed = false;
+      pressedKeysMap = [];
+      lastPressedKeyCode = null;
+    }
+
+    function simulateKeyTyped(code, c) {
+      pressedKeysMap[code] = c;
+      lastPressedKeyCode = null;
+      p.key = c;
+      p.keyCode = code;
+      p.keyPressed();
+      p.keyCode = 0;
+      p.keyTyped();
+      updateKeyPressed();
+    }
+
+    function handleKeydown(e) {
+      var code = getKeyCode(e);
+      if (code === PConstants.DELETE) {
+        simulateKeyTyped(code, new Char(127));
+        return;
+      }
+      if (codedKeys.indexOf(code) < 0) {
+        lastPressedKeyCode = code;
+        return;
+      }
+      var c = new Char(PConstants.CODED);
+      p.key = c;
+      p.keyCode = code;
+      pressedKeysMap[code] = c;
+      p.keyPressed();
+      lastPressedKeyCode = null;
+      updateKeyPressed();
+      return suppressKeyEvent(e);
+    }
+
+    function handleKeypress(e) {
+      if (lastPressedKeyCode === null) {
+        return; // processed in handleKeydown
+      }
+      var code = lastPressedKeyCode, c = getKeyChar(e);
+      simulateKeyTyped(code, c);
+      return suppressKeyEvent(e);
+    }
+
+    function handleKeyup(e) {
+      var code = getKeyCode(e), c = pressedKeysMap[code];
+      if (c === undef) {
+        return; // no keyPressed event was generated.
+      }
+      p.key = c;
+      p.keyCode = code;
+      p.keyReleased();
+      delete pressedKeysMap[code];
+      updateKeyPressed();
+    }
+
+    // Send aCode Processing syntax to be converted to JavaScript
+    if (!pgraphicsMode) {
+      if (aCode instanceof Processing.Sketch) {
+        // Use sketch as is
+        curSketch = aCode;
+      } else if (typeof aCode === "function") {
+        // Wrap function with default sketch parameters
+        curSketch = new Processing.Sketch(aCode);
+      } else if (!aCode) {
+        // Empty sketch
+        curSketch = new Processing.Sketch(function (){});
+      } else {
+  //#if PARSER
+        // Compile the code
+        curSketch = Processing.compile(aCode);
+  //#else
+  //      throw "PJS compile is not supported";
+  //#endif
+      }
+
+      // Expose internal field for diagnostics and testing
+      p.externals.sketch = curSketch;
+
+      wireDimensionalFunctions();
+
+      // the onfocus and onblur events are handled in two parts.
+      // 1) the p.focused property is handled per sketch
+      curElement.onfocus = function() {
+        p.focused = true;
+      };
+
+      curElement.onblur = function() {
+        p.focused = false;
+        if (!curSketch.options.globalKeyEvents) {
+          resetKeyPressed();
+        }
+      };
+
+      // 2) looping status is handled per page, based on the pauseOnBlur @pjs directive
+      if (curSketch.options.pauseOnBlur) {
+        attachEventHandler(window, 'focus', function() {
+          if (doLoop) {
+            p.loop();
+          }
+        });
+
+        attachEventHandler(window, 'blur', function() {
+          if (doLoop && loopStarted) {
+            p.noLoop();
+            doLoop = true; // make sure to keep this true after the noLoop call
+          }
+          resetKeyPressed();
+        });
+      }
+
+      // if keyboard events should be handled globally, the listeners should
+      // be bound to the document window, rather than to the current canvas
+      var keyTrigger = curSketch.options.globalKeyEvents ? window : curElement;
+      attachEventHandler(keyTrigger, "keydown", handleKeydown);
+      attachEventHandler(keyTrigger, "keypress", handleKeypress);
+      attachEventHandler(keyTrigger, "keyup", handleKeyup);
+
+      // Step through the libraries that were attached at doc load...
+      for (var i in Processing.lib) {
+        if (Processing.lib.hasOwnProperty(i)) {
+          if(Processing.lib[i].hasOwnProperty("attach")) {
+            // use attach function if present
+            Processing.lib[i].attach(p);
+          } else if(Processing.lib[i] instanceof Function)  {
+            // Init the libraries in the context of this p_instance (legacy)
+            Processing.lib[i].call(this);
+          }
+        }
+      }
+
+      // sketch execute test interval, used to reschedule
+      // an execute when preloads have not yet finished.
+      var retryInterval = 100;
+
+      var executeSketch = function(processing) {
+        // Don't start until all specified images and fonts in the cache are preloaded
+        if (!(curSketch.imageCache.pending || PFont.preloading.pending(retryInterval))) {
+          // the opera preload cache can only be cleared once we start
+          if (window.opera) {
+            var link,
+                element,
+                operaCache=curSketch.imageCache.operaCache;
+            for (link in operaCache) {
+              if(operaCache.hasOwnProperty(link)) {
+                element = operaCache[link];
+                if (element !== null) {
+                  document.body.removeChild(element);
+                }
+                delete(operaCache[link]);
+              }
+            }
+          }
+
+          curSketch.attach(processing, defaultScope);
+
+          // pass a reference to the p instance for this sketch.
+          curSketch.onLoad(processing);
+
+          // Run void setup()
+          if (processing.setup) {
+            processing.setup();
+            // if any transforms were performed in setup reset to identity matrix
+            // so draw loop is unpolluted
+            processing.resetMatrix();
+            curSketch.onSetup();
+          }
+
+          // some pixels can be cached, flushing
+          resetContext();
+
+          if (processing.draw) {
+            if (!doLoop) {
+              processing.redraw();
+            } else {
+              processing.loop();
+            }
+          }
+        } else {
+          window.setTimeout(function() { executeSketch(processing); }, retryInterval);
+        }
+      };
+
+      // Only store an instance of non-createGraphics instances.
+      addInstance(this);
+
+      // The parser adds custom methods to the processing context
+      // this renames p to processing so these methods will run
+      executeSketch(p);
+    } else {
+      // No executable sketch was specified
+      // or called via createGraphics
+      curSketch = new Processing.Sketch();
+
+      wireDimensionalFunctions();
+
+      // Hack to make PGraphics work again after splitting size()
+      p.size = function(w, h, render) {
+        if (render && render === PConstants.WEBGL) {
+          wireDimensionalFunctions('3D');
+        } else {
+          wireDimensionalFunctions('2D');
+        }
+
+        p.size(w, h, render);
+      };
+    }
+  };
+
+  // Place-holder for overridable debugging function
+  Processing.debug = (function() {
+    if ("console" in window) {
+      return function(msg) {
+        window.console.log('Processing.js: ' + msg);
+      };
+    }
+    return noop;
+  }());
+
+  // bind prototype
+  Processing.prototype = defaultScope;
+
+  /**
+   * instance store and lookup
+   */
+  Processing.instances = processingInstances;
+  Processing.getInstanceById = function(name) {
+    return processingInstances[processingInstanceIds[name]];
+  };
+
+  // Unsupported Processing File and I/O operations.
+  (function(Processing) {
+    var unsupportedP5 = ("open() createOutput() createInput() BufferedReader selectFolder() " +
+                         "dataPath() createWriter() selectOutput() beginRecord() " +
+                         "saveStream() endRecord() selectInput() saveBytes() createReader() " +
+                         "beginRaw() endRaw() PrintWriter delay()").split(" "),
+        count = unsupportedP5.length,
+        prettyName,
+        p5Name;
+
+    function createUnsupportedFunc(n) {
+      return function() {
+        throw "Processing.js does not support " + n + ".";
+      };
+    }
+
+    while (count--) {
+      prettyName = unsupportedP5[count];
+      p5Name = prettyName.replace("()", "");
+      Processing[p5Name] = createUnsupportedFunc(prettyName);
+    }
+  }(defaultScope));
+
+  // we're done. Return our object.
+  return Processing;
+};
+
+},{}],27:[function(require,module,exports){
+// Base source files
+var source = {
+  virtEquals: require("./Helpers/virtEquals"),
+  virtHashCode: require("./Helpers/virtHashCode"),
+  ObjectIterator: require("./Helpers/ObjectIterator"),
+  PConstants: require("./Helpers/PConstants"),
+  ArrayList: require("./Objects/ArrayList"),
+  HashMap: require("./Objects/HashMap"),
+  PVector: require("./Objects/PVector"),
+  PFont: require("./Objects/PFont"),
+  Char: require("./Objects/Char"),
+  XMLAttribute: require("./Objects/XMLAttribute"),
+  XMLElement: require("./Objects/XMLElement"),
+  PMatrix2D: require("./Objects/PMatrix2D"),
+  PMatrix3D: require("./Objects/PMatrix3D"),
+  PShape: require("./Objects/PShape"),
+  colors: require("./Objects/webcolors"),
+  PShapeSVG:  require("./Objects/PShapeSVG"),
+  CommonFunctions: require("./P5Functions/commonFunctions"),
+  defaultScope: require("./Helpers/defaultScope"),
+  Processing: require("./Processing"),
+  setupParser: require("./Parser/Parser"),
+  finalize: require("./Helpers/finalizeProcessing")
+};
+
+// Additional code that gets tacked onto "p" during
+// instantiation of a Processing sketch.
+source.extend = {
+  withMath: require("./P5Functions/Math.js"),
+  withProxyFunctions: require("./P5Functions/JavaProxyFunctions")(source.virtHashCode, source.virtEquals),
+  withTouch: require("./P5Functions/touchmouse"),
+  withCommonFunctions: source.CommonFunctions.withCommonFunctions
+};
+
+/**
+ * Processing.js building function
+ */
+module.exports = function buildProcessingJS(Browser, testHarness) {
+  var noop = function(){},
+      virtEquals = source.virtEquals,
+      virtHashCode = source.virtHashCode,
+      PConstants = source.PConstants,
+      CommonFunctions = source.CommonFunctions,
+      ObjectIterator = source.ObjectIterator,
+      Char = source.Char,
+      XMLAttribute = source.XMLAttribute(),
+
+      ArrayList = source.ArrayList({
+        virtHashCode: virtHashCode,
+        virtEquals: virtEquals
+      }),
+
+      HashMap = source.HashMap({
+        virtHashCode: virtHashCode,
+        virtEquals: virtEquals
+      }),
+
+      PVector = source.PVector({
+        PConstants: PConstants
+      }),
+
+      PFont = source.PFont({
+        Browser: Browser,
+        noop: noop
+      }),
+
+      XMLElement = source.XMLElement({
+        Browser: Browser,
+        XMLAttribute: XMLAttribute
+      }),
+
+      PMatrix2D = source.PMatrix2D({
+        p:CommonFunctions
+      }),
+
+      PMatrix3D = source.PMatrix3D({
+        p:CommonFunctions
+      }),
+
+      PShape = source.PShape({
+        PConstants: PConstants,
+        PMatrix2D: PMatrix2D,
+        PMatrix3D: PMatrix3D
+      }),
+
+      PShapeSVG = source.PShapeSVG({
+        CommonFunctions: CommonFunctions,
+        PConstants: PConstants,
+        PShape: PShape,
+        XMLElement: XMLElement,
+        colors: source.colors
+      }),
+
+      defaultScope = source.defaultScope({
+        ArrayList: ArrayList,
+        HashMap: HashMap,
+        PVector: PVector,
+        PFont: PFont,
+        PShapeSVG: PShapeSVG,
+        ObjectIterator: ObjectIterator,
+        PConstants: PConstants,
+        Char: Char,
+        XMLElement: XMLElement,
+        XML: XMLElement
+      }),
+
+      Processing = source.Processing({
+        defaultScope: defaultScope,
+        Browser: Browser,
+        extend: source.extend,
+        noop: noop
+      });
+
+  // set up the Processing syntax parser
+  Processing = source.setupParser(Processing, {
+    Browser: Browser,
+    aFunctions: testHarness,
+    defaultScope: defaultScope
+  });
+
+  // finalise the Processing object
+  Processing = source.finalize(Processing, {
+    version: require('../package.json').version,
+    isDomPresent: false || Browser.isDomPresent,
+    window: Browser.window,
+    document: Browser.document,
+    noop: noop
+  });
+
+  // done.
+  return Processing;
+};
+
+},{"../package.json":2,"./Helpers/ObjectIterator":3,"./Helpers/PConstants":4,"./Helpers/defaultScope":5,"./Helpers/finalizeProcessing":6,"./Helpers/virtEquals":7,"./Helpers/virtHashCode":8,"./Objects/ArrayList":9,"./Objects/Char":10,"./Objects/HashMap":11,"./Objects/PFont":12,"./Objects/PMatrix2D":13,"./Objects/PMatrix3D":14,"./Objects/PShape":15,"./Objects/PShapeSVG":16,"./Objects/PVector":17,"./Objects/XMLAttribute":18,"./Objects/XMLElement":19,"./Objects/webcolors":20,"./P5Functions/JavaProxyFunctions":21,"./P5Functions/Math.js":22,"./P5Functions/commonFunctions":23,"./P5Functions/touchmouse":24,"./Parser/Parser":25,"./Processing":26}]},{},[1])
+;
